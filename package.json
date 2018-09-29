@@ -12,18 +12,18 @@
   ],
   "license": "MIT",
   "repository": {
-    "url": "git://github.com/byteball/headless-byteball.git",
+    "url": "git://github.com/ly95/headless-byteball.git",
     "type": "git"
   },
   "bugs": {
-    "url": "https://github.com/byteball/headless-byteball/issues"
+    "url": "https://github.com/ly95/headless-byteball/issues"
   },
   "browser": {
     "request": "browser-request",
     "secp256k1": "secp256k1/js"
   },
   "dependencies": {
-    "byteballcore": "git+https://github.com/byteball/byteballcore.git",
+    "byteballcore": "git+https://github.com/ly95/byteballcore.git",
     "bitcore-lib": "^0.13.14",
     "bitcore-mnemonic": "~1.0.0",
     "json-rpc2": "^1.0.2"
