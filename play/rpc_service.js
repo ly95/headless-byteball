@@ -108,17 +108,17 @@ function initRPC() {
 						db.query(
 							"SELECT asset, is_stable, SUM(amount) AS balance \n\
 							FROM outputs JOIN units USING(unit) \n\
-							WHERE is_spent=0 AND address=? AND sequence='good' AND asset "+(asset ? "="+db.escape(asset) : "IS NULL")+" \n\
+							WHERE is_spent=0 AND address=? AND sequence='good' "+(asset ? "AND asset="+db.escape(asset) : "")+" \n\
 							GROUP BY is_stable", [address],
 							function(rows) {
 								var balance = {};
-								balance[asset || 'base'] = {
-									stable: 0,
-									pending: 0
-								};
 								for (var i = 0; i < rows.length; i++) {
 									var row = rows[i];
-									balance[asset || 'base'][row.is_stable ? 'stable' : 'pending'] = row.balance;
+									balance[row.asset || 'base'] = {
+										stable: 0,
+										pending: 0
+									};
+									balance[row.asset || 'base'][row.is_stable ? 'stable' : 'pending'] = row.balance;
 								}
 								cb(null, balance);
 							}
