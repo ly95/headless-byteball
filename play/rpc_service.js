@@ -15,6 +15,11 @@ var mutex = require('byteballcore/mutex.js');
 var storage = require('byteballcore/storage.js');
 var constants = require('byteballcore/constants.js');
 var validationUtils = require("byteballcore/validation_utils.js");
+let crypto = require('crypto');
+let Mnemonic = require('bitcore-mnemonic');
+let Bitcore = require('bitcore-lib');
+let objectHash = require('byteballcore/object_hash');
+let ecdsa = require('secp256k1');
 var wallet_id;
 
 if (conf.bSingleAddress)
@@ -211,6 +216,51 @@ function initRPC() {
 		}
 		else
 			cb("wrong parameters");
+	});
+
+	/**
+	 * create config object for wallet
+	 * @return {Object} wallet
+	 */
+	server.expose('createwallet', function(args, opt, cb) {
+		console.log('createwallet '+JSON.stringify(args));
+
+		var derivePubkey = function (xPubKey, path) {
+			let hdPubKey = new Bitcore.HDPublicKey(xPubKey);
+			return hdPubKey.derive(path).publicKey.toBuffer().toString("base64");
+		}
+
+		let deviceTempPrivKey = crypto.randomBytes(32);
+		let devicePrevTempPrivKey = crypto.randomBytes(32);
+		let passphrase = "";
+		let mnemonic = new Mnemonic();
+		while (!Mnemonic.isValid(mnemonic.toString()))
+			mnemonic = new Mnemonic();
+
+		let xPrivKey = mnemonic.toHDPrivateKey(passphrase);
+		let strXPubKey = Bitcore.HDPublicKey(xPrivKey.derive("m/44'/0'/0'")).toString();
+		let pubkey = derivePubkey(strXPubKey, "m/"+0+"/"+0);
+		let arrDefinition = ['sig', {pubkey: pubkey}];
+		let address = objectHash.getChash160(arrDefinition);
+		let wallet = crypto.createHash("sha256").update(strXPubKey, "utf8").digest("base64");
+		
+		let devicePrivKey = xPrivKey.derive("m/1'").privateKey.bn.toBuffer({size:32});
+		let devicePubkey = ecdsa.publicKeyCreate(devicePrivKey, true).toString('base64');
+		let device_address = objectHash.getDeviceAddress(devicePubkey);
+	
+		let obj = {};
+		obj['passphrase'] = passphrase;
+		obj['mnemonic_phrase'] = mnemonic.phrase;
+		obj['temp_priv_key'] = deviceTempPrivKey.toString('base64');
+		obj['prev_temp_priv_key'] = devicePrevTempPrivKey.toString('base64');
+		obj['device_address'] = device_address;
+		obj['address'] = address;
+		obj['wallet'] = wallet;
+		obj['is_change'] = 0;
+		obj['address_index'] = 0;
+		obj['definition'] = arrDefinition;
+
+		cb(null, obj);
 	});
 
 	headlessWallet.readSingleWallet(function(_wallet_id) {
