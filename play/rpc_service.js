@@ -219,6 +219,74 @@ function initRPC() {
 	});
 
 	/**
+	 * Send funds to address.
+	 */
+	server.expose('sendpayment', function(args, opt, cb) {
+		console.log('sendpayment '+JSON.stringify(args));
+
+		var walletObj = args[0];
+		var toAddress = args[1];
+		var amount = args[2];
+
+		if (validationUtils.isValidAddress(toAddress)) {
+			cb("invalid address");
+		}
+
+		if (asset && !validationUtils.isValidBase64(asset, constants.HASH_LENGTH))
+			return cb("bad asset: "+asset);
+
+		var ecdsaSig = require('byteballcore/signature.js');
+		let composer = require('byteballcore/composer.js');
+		let network = require('byteballcore/network.js');
+		let callbacks = composer.getSavingCallbacks({
+			ifNotEnoughFunds: function(err){
+				cb(err);
+			},
+			ifError: function(err){
+				cb(err);
+			},
+			ifOk: function(objJoint){
+				network.broadcastJoint(objJoint);
+				cb(null, objJoint);
+			}
+		});
+
+		var mnemonic = new Mnemonic(walletObj.mnemonic_phrase);
+		var xPrivKey = mnemonic.toHDPrivateKey(walletObj.passphrase);
+
+		var signWithLocalPrivateKey = function(account, is_change, address_index, text_to_sign, handleSig){
+			var path = "m/44'/0'/" + account + "'/"+is_change+"/"+address_index;
+			var privateKey = xPrivKey.derive(path).privateKey;
+			var privKeyBuf = privateKey.bn.toBuffer({size:32});
+			handleSig(ecdsaSig.sign(text_to_sign, privKeyBuf));
+		}
+
+		var signer = {
+			readSigningPaths: function(conn, address, handleLengthsBySigningPaths){
+				handleLengthsBySigningPaths({r: constants.SIG_LENGTH});
+			},
+			readDefinition: function(conn, address, handleDefinition){
+				if (!walletObj.definition) {
+					throw Error("definition not found");
+				}
+				handleDefinition(null, walletObj.definition);
+			},
+			sign: function(objUnsignedUnit, assocPrivatePayloads, address, signing_path, handleSignature){
+				var buf_to_sign = objectHash.getUnitHashToSign(objUnsignedUnit);
+				signWithLocalPrivateKey(0, walletObj.is_change, walletObj.address_index, buf_to_sign, function(sig){
+					handleSignature(null, sig);
+				});
+			}
+		};
+
+		let arrOutputs = [
+			{address: walletObj.address, amount: 0},
+			{address: toAddress, amount: amount}
+		];
+		composer.composePaymentJoint([walletObj.address], arrOutputs, signer, callbacks);
+	});
+
+	/**
 	 * create config object for wallet
 	 * @return {Object} wallet
 	 */
