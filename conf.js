@@ -18,7 +18,6 @@ exports.permanent_pairing_secret = 'randomstring';
 exports.control_addresses = ['DEVICE ALLOWED TO CHAT'];
 exports.payout_address = 'WHERE THE MONEY CAN BE SENT TO';
 exports.KEYS_FILENAME = 'keys.json';
-//exports.bSingleAddress = true;
 
 // where logs are written to (absolute path).  Default is log.txt in app data directory
 //exports.LOG_FILENAME = '/dev/null';

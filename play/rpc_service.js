@@ -223,12 +223,9 @@ function initRPC() {
 		var toAddress = args[1];
 		var amount = args[2];
 
-		if (validationUtils.isValidAddress(toAddress)) {
-			cb("invalid address");
+		if (!validationUtils.isValidAddress(toAddress)) {
+			cb("227: invalid address");
 		}
-
-		if (asset && !validationUtils.isValidBase64(asset, constants.HASH_LENGTH))
-			return cb("bad asset: "+asset);
 
 		var ecdsaSig = require('byteballcore/signature.js');
 		let composer = require('byteballcore/composer.js');
@@ -238,7 +235,7 @@ function initRPC() {
 				cb(err);
 			},
 			ifError: function(err){
-				cb(err);
+				cb("241: " + err);
 			},
 			ifOk: function(objJoint){
 				network.broadcastJoint(objJoint);
