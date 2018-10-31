@@ -6,6 +6,8 @@
 exports.bServeAsHub = false;
 exports.bLight = false;
 
+exports.GENESIS_UNIT = '5dz2NhZ3cAPhqtqJ3vvjC9iVJmNOmLITwGUcWsBHBMI=';
+exports.BLACKBYTES_ASSET = 'ZWPYh1NOFE9J7qofOdIo3/2i3xOIDt5xqtEVTSwr/V4=';
 
 exports.storage = 'sqlite';
 
@@ -16,6 +18,7 @@ exports.permanent_pairing_secret = 'randomstring';
 exports.control_addresses = ['DEVICE ALLOWED TO CHAT'];
 exports.payout_address = 'WHERE THE MONEY CAN BE SENT TO';
 exports.KEYS_FILENAME = 'keys.json';
+//exports.bSingleAddress = true;
 
 // where logs are written to (absolute path).  Default is log.txt in app data directory
 //exports.LOG_FILENAME = '/dev/null';
