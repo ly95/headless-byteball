@@ -46,13 +46,13 @@ function initRPC() {
 	 * Returns information about the current state.
 	 * @return { last_mci: {Integer}, last_stable_mci: {Integer}, count_unhandled: {Integer} }
 	 */
-	server.expose('getinfo', function(args, opt, cb) {
+	server.expose('getinfo', function (args, opt, cb) {
 		var response = {};
-		storage.readLastMainChainIndex(function(last_mci){
+		storage.readLastMainChainIndex(function (last_mci) {
 			response.last_mci = last_mci;
-			storage.readLastStableMcIndex(db, function(last_stable_mci){
+			storage.readLastStableMcIndex(db, function (last_stable_mci) {
 				response.last_stable_mci = last_stable_mci;
-				db.query("SELECT COUNT(*) AS count_unhandled FROM unhandled_joints", function(rows){
+				db.query("SELECT COUNT(*) AS count_unhandled FROM unhandled_joints", function (rows) {
 					response.count_unhandled = rows[0].count_unhandled;
 					cb(null, response);
 				});
@@ -64,24 +64,24 @@ function initRPC() {
 	 * Validates address.
 	 * @return {boolean} is_valid
 	 */
-	server.expose('validateaddress', function(args, opt, cb) {
+	server.expose('validateaddress', function (args, opt, cb) {
 		var address = args[0];
 		cb(null, validationUtils.isValidAddress(address));
 	});
-	
+
 	// alias for validateaddress
-	server.expose('verifyaddress', function(args, opt, cb) {
+	server.expose('verifyaddress', function (args, opt, cb) {
 		var address = args[0];
 		cb(null, validationUtils.isValidAddress(address));
 	});
-	
+
 	/**
 	 * Creates and returns new wallet address.
 	 * @return {String} address
 	 */
-	server.expose('getnewaddress', function(args, opt, cb) {
-		mutex.lock(['rpc_getnewaddress'], function(unlock){
-			walletDefinedByKeys.issueNextAddress(wallet_id, 0, function(addressInfo) {
+	server.expose('getnewaddress', function (args, opt, cb) {
+		mutex.lock(['rpc_getnewaddress'], function (unlock) {
+			walletDefinedByKeys.issueNextAddress(wallet_id, 0, function (addressInfo) {
 				unlock();
 				cb(null, addressInfo.address);
 			});
@@ -98,7 +98,7 @@ function initRPC() {
 	 * If no address supplied, returns wallet balance(stable and pending).
 	 * @return {"base":{"stable":{Integer},"pending":{Integer}}} balance
 	 */
-	server.expose('getbalance', function(args, opt, cb) {
+	server.expose('getbalance', function (args, opt, cb) {
 		let start_time = Date.now();
 		var address = args[0];
 		var asset = args[1];
@@ -107,9 +107,9 @@ function initRPC() {
 				db.query(
 					"SELECT asset, is_stable, SUM(amount) AS balance \n\
 					FROM outputs JOIN units USING(unit) \n\
-					WHERE is_spent=0 AND address=? AND sequence='good' "+(asset ? "AND asset="+db.escape(asset) : "")+" \n\
+					WHERE is_spent=0 AND address=? AND sequence='good' "+ (asset ? "AND asset=" + db.escape(asset) : "") + " \n\
 					GROUP BY is_stable", [address],
-					function(rows) {
+					function (rows) {
 						var balance = {};
 						for (var i = 0; i < rows.length; i++) {
 							var row = rows[i];
@@ -126,8 +126,8 @@ function initRPC() {
 				cb("invalid address");
 		}
 		else
-			Wallet.readBalance(wallet_id, function(balances) {
-				console.log('getbalance took '+(Date.now()-start_time)+'ms');
+			Wallet.readBalance(wallet_id, function (balances) {
+				console.log('getbalance took ' + (Date.now() - start_time) + 'ms');
 				cb(null, balances);
 			});
 	});
@@ -137,10 +137,10 @@ function initRPC() {
 	 * 
 	 * @return {"base":{"stable":{Integer},"pending":{Integer}}} balance
 	 */
-	server.expose('getmainbalance', function(args, opt, cb) {
+	server.expose('getmainbalance', function (args, opt, cb) {
 		let start_time = Date.now();
-		balances.readOutputsBalance(wallet_id, function(balances) {
-			console.log('getmainbalance took '+(Date.now()-start_time)+'ms');
+		balances.readOutputsBalance(wallet_id, function (balances) {
+			console.log('getmainbalance took ' + (Date.now() - start_time) + 'ms');
 			cb(null, balances);
 		});
 	});
@@ -154,32 +154,32 @@ function initRPC() {
 	 * If no address supplied, returns wallet transaction list.
 	 * @return [{"action":{'invalid','received','sent','moved'},"amount":{Integer},"my_address":{String},"arrPayerAddresses":[{String}],"confirmations":{0,1},"unit":{String},"fee":{Integer},"time":{String},"level":{Integer},"asset":{String}}] transactions
 	 */
-	server.expose('listtransactions', function(args, opt, cb) {
+	server.expose('listtransactions', function (args, opt, cb) {
 		let start_time = Date.now();
 		if (Array.isArray(args) && typeof args[0] === 'string') {
 			var address = args[0];
 			if (validationUtils.isValidAddress(address))
-				Wallet.readTransactionHistory({address: address}, function(result) {
+				Wallet.readTransactionHistory({ address: address }, function (result) {
 					cb(null, result);
 				});
 			else
 				cb("invalid address");
 		}
-		else{
-			var opts = {wallet: wallet_id};
+		else {
+			var opts = { wallet: wallet_id };
 			if (args.unit && validationUtils.isValidBase64(args.unit, constants.HASH_LENGTH))
 				opts.unit = args.unit;
 			if (args.since_mci && validationUtils.isNonnegativeInteger(args.since_mci))
 				opts.since_mci = args.since_mci;
 			else
 				opts.limit = 200;
-			if (args.asset){
+			if (args.asset) {
 				if (!validationUtils.isValidBase64(args.asset, constants.HASH_LENGTH))
-					return cb("bad asset: "+args.asset);
+					return cb("bad asset: " + args.asset);
 				opts.asset = args.asset;
 			}
-			Wallet.readTransactionHistory(opts, function(result) {
-				console.log('listtransactions '+JSON.stringify(args)+' took '+(Date.now()-start_time)+'ms');
+			Wallet.readTransactionHistory(opts, function (result) {
+				console.log('listtransactions ' + JSON.stringify(args) + ' took ' + (Date.now() - start_time) + 'ms');
 				cb(null, result);
 			});
 		}
@@ -193,18 +193,18 @@ function initRPC() {
 	 * @param {Integer} amount
 	 * @return {String} status
 	 */
-	server.expose('sendtoaddress', function(args, opt, cb) {
-		console.log('sendtoaddress '+JSON.stringify(args));
+	server.expose('sendtoaddress', function (args, opt, cb) {
+		console.log('sendtoaddress ' + JSON.stringify(args));
 		let start_time = Date.now();
 		var amount = args[1];
 		var toAddress = args[0];
 		var asset = args[2];
 		if (asset && !validationUtils.isValidBase64(asset, constants.HASH_LENGTH))
-			return cb("bad asset: "+asset);
+			return cb("bad asset: " + asset);
 		if (amount && toAddress) {
 			if (validationUtils.isValidAddress(toAddress))
-				headlessWallet.issueChangeAddressAndSendPayment(asset, amount, toAddress, null, function(err, unit) {
-					console.log('sendtoaddress '+JSON.stringify(args)+' took '+(Date.now()-start_time)+'ms, unit='+unit+', err='+err);
+				headlessWallet.issueChangeAddressAndSendPayment(asset, amount, toAddress, null, function (err, unit) {
+					console.log('sendtoaddress ' + JSON.stringify(args) + ' took ' + (Date.now() - start_time) + 'ms, unit=' + unit + ', err=' + err);
 					cb(err, err ? undefined : unit);
 				});
 			else
@@ -217,8 +217,8 @@ function initRPC() {
 	/**
 	 * Send funds to address.
 	 */
-	server.expose('sendpayment', function(args, opt, cb) {
-		console.log('sendpayment '+JSON.stringify(args));
+	server.expose('sendpayment', function (args, opt, cb) {
+		console.log('sendpayment ' + JSON.stringify(args));
 
 		var walletObj = args[0];
 		var toAddress = args[1];
@@ -231,13 +231,13 @@ function initRPC() {
 		let composer = require('byteballcore/composer.js');
 		let network = require('byteballcore/network.js');
 		let callbacks = composer.getSavingCallbacks({
-			ifNotEnoughFunds: function(err){
+			ifNotEnoughFunds: function (err) {
 				cb(err);
 			},
-			ifError: function(err){
+			ifError: function (err) {
 				cb("241: " + err);
 			},
-			ifOk: function(objJoint){
+			ifOk: function (objJoint) {
 				network.broadcastJoint(objJoint);
 				cb(null, objJoint);
 			}
@@ -246,34 +246,34 @@ function initRPC() {
 		var mnemonic = new Mnemonic(walletObj.mnemonic_phrase);
 		var xPrivKey = mnemonic.toHDPrivateKey(walletObj.passphrase);
 
-		var signWithLocalPrivateKey = function(account, is_change, address_index, text_to_sign, handleSig){
-			var path = "m/44'/0'/" + account + "'/"+is_change+"/"+address_index;
+		var signWithLocalPrivateKey = function (account, is_change, address_index, text_to_sign, handleSig) {
+			var path = "m/44'/0'/" + account + "'/" + is_change + "/" + address_index;
 			var privateKey = xPrivKey.derive(path).privateKey;
-			var privKeyBuf = privateKey.bn.toBuffer({size:32});
+			var privKeyBuf = privateKey.bn.toBuffer({ size: 32 });
 			handleSig(ecdsaSig.sign(text_to_sign, privKeyBuf));
 		}
 
 		var signer = {
-			readSigningPaths: function(conn, address, handleLengthsBySigningPaths){
-				handleLengthsBySigningPaths({r: constants.SIG_LENGTH});
+			readSigningPaths: function (conn, address, handleLengthsBySigningPaths) {
+				handleLengthsBySigningPaths({ r: constants.SIG_LENGTH });
 			},
-			readDefinition: function(conn, address, handleDefinition){
+			readDefinition: function (conn, address, handleDefinition) {
 				if (!walletObj.definition) {
 					throw Error("definition not found");
 				}
 				handleDefinition(null, walletObj.definition);
 			},
-			sign: function(objUnsignedUnit, assocPrivatePayloads, address, signing_path, handleSignature){
+			sign: function (objUnsignedUnit, assocPrivatePayloads, address, signing_path, handleSignature) {
 				var buf_to_sign = objectHash.getUnitHashToSign(objUnsignedUnit);
-				signWithLocalPrivateKey(0, walletObj.is_change, walletObj.address_index, buf_to_sign, function(sig){
+				signWithLocalPrivateKey(0, walletObj.is_change, walletObj.address_index, buf_to_sign, function (sig) {
 					handleSignature(null, sig);
 				});
 			}
 		};
 
 		let arrOutputs = [
-			{address: walletObj.address, amount: 0},
-			{address: toAddress, amount: amount}
+			{ address: walletObj.address, amount: 0 },
+			{ address: toAddress, amount: amount }
 		];
 		composer.composePaymentJoint([walletObj.address], arrOutputs, signer, callbacks);
 	});
@@ -282,8 +282,8 @@ function initRPC() {
 	 * create config object for wallet
 	 * @return {Object} wallet
 	 */
-	server.expose('createwallet', function(args, opt, cb) {
-		console.log('createwallet '+JSON.stringify(args));
+	server.expose('createwallet', function (args, opt, cb) {
+		console.log('createwallet ' + JSON.stringify(args));
 
 		var derivePubkey = function (xPubKey, path) {
 			let hdPubKey = new Bitcore.HDPublicKey(xPubKey);
@@ -299,15 +299,15 @@ function initRPC() {
 
 		let xPrivKey = mnemonic.toHDPrivateKey(passphrase);
 		let strXPubKey = Bitcore.HDPublicKey(xPrivKey.derive("m/44'/0'/0'")).toString();
-		let pubkey = derivePubkey(strXPubKey, "m/"+0+"/"+0);
-		let arrDefinition = ['sig', {pubkey: pubkey}];
+		let pubkey = derivePubkey(strXPubKey, "m/" + 0 + "/" + 0);
+		let arrDefinition = ['sig', { pubkey: pubkey }];
 		let address = objectHash.getChash160(arrDefinition);
 		let wallet = crypto.createHash("sha256").update(strXPubKey, "utf8").digest("base64");
-		
-		let devicePrivKey = xPrivKey.derive("m/1'").privateKey.bn.toBuffer({size:32});
+
+		let devicePrivKey = xPrivKey.derive("m/1'").privateKey.bn.toBuffer({ size: 32 });
 		let devicePubkey = ecdsa.publicKeyCreate(devicePrivKey, true).toString('base64');
 		let device_address = objectHash.getDeviceAddress(devicePubkey);
-	
+
 		let obj = {};
 		obj['passphrase'] = passphrase;
 		obj['mnemonic_phrase'] = mnemonic.phrase;
@@ -326,19 +326,19 @@ function initRPC() {
 	/**
 	 * create an asset
 	 */
-	server.expose('createasset', function(args, opt, cb) {
-		console.log('createasset '+JSON.stringify(args));
+	server.expose('createasset', function (args, opt, cb) {
+		console.log('createasset ' + JSON.stringify(args));
 
 		var composer = require('byteballcore/composer.js');
 		var network = require('byteballcore/network.js');
 		var callbacks = composer.getSavingCallbacks({
-			ifNotEnoughFunds: function(err){
+			ifNotEnoughFunds: function (err) {
 				cb(err);
 			},
-			ifError: function(err){
+			ifError: function (err) {
 				cb("340: " + err);
 			},
-			ifOk: function(objJoint){
+			ifOk: function (objJoint) {
 				network.broadcastJoint(objJoint);
 				cb(null, objJoint);
 			}
@@ -350,26 +350,26 @@ function initRPC() {
 		var mnemonic = new Mnemonic(walletObj.mnemonic_phrase);
 		var xPrivKey = mnemonic.toHDPrivateKey(walletObj.passphrase);
 
-		var signWithLocalPrivateKey = function(account, is_change, address_index, text_to_sign, handleSig){
-			var path = "m/44'/0'/" + account + "'/"+is_change+"/"+address_index;
+		var signWithLocalPrivateKey = function (account, is_change, address_index, text_to_sign, handleSig) {
+			var path = "m/44'/0'/" + account + "'/" + is_change + "/" + address_index;
 			var privateKey = xPrivKey.derive(path).privateKey;
-			var privKeyBuf = privateKey.bn.toBuffer({size:32});
+			var privKeyBuf = privateKey.bn.toBuffer({ size: 32 });
 			handleSig(ecdsaSig.sign(text_to_sign, privKeyBuf));
 		}
 
 		var signer = {
-			readSigningPaths: function(conn, address, handleLengthsBySigningPaths){
-				handleLengthsBySigningPaths({r: constants.SIG_LENGTH});
+			readSigningPaths: function (conn, address, handleLengthsBySigningPaths) {
+				handleLengthsBySigningPaths({ r: constants.SIG_LENGTH });
 			},
-			readDefinition: function(conn, address, handleDefinition){
+			readDefinition: function (conn, address, handleDefinition) {
 				if (!walletObj.definition) {
 					throw Error("definition not found");
 				}
 				handleDefinition(null, walletObj.definition);
 			},
-			sign: function(objUnsignedUnit, assocPrivatePayloads, address, signing_path, handleSignature){
+			sign: function (objUnsignedUnit, assocPrivatePayloads, address, signing_path, handleSignature) {
 				var buf_to_sign = objectHash.getUnitHashToSign(objUnsignedUnit);
-				signWithLocalPrivateKey(0, walletObj.is_change, walletObj.address_index, buf_to_sign, function(sig){
+				signWithLocalPrivateKey(0, walletObj.is_change, walletObj.address_index, buf_to_sign, function (sig) {
 					handleSignature(null, sig);
 				});
 			}
@@ -378,11 +378,73 @@ function initRPC() {
 		composer.composeAssetDefinitionJoint(walletObj.address, asset, signer, callbacks);
 	});
 
-	headlessWallet.readSingleWallet(function(_wallet_id) {
+	server.expose('sendassetpayment', function (args, opt, cb) {
+		console.log('sendassetpayment ' + JSON.stringify(args));
+
+		var walletObj = args[0];
+		var asset = args[1];
+		var toAddress = args[2];
+		var amount = args[3];
+
+		var network = require('byteballcore/network.js');
+		var divisibleAsset = require('byteballcore/divisible_asset.js');
+
+		var mnemonic = new Mnemonic(walletObj.mnemonic_phrase);
+		var xPrivKey = mnemonic.toHDPrivateKey(walletObj.passphrase);
+
+		var signWithLocalPrivateKey = function (account, is_change, address_index, text_to_sign, handleSig) {
+			var path = "m/44'/0'/" + account + "'/" + is_change + "/" + address_index;
+			var privateKey = xPrivKey.derive(path).privateKey;
+			var privKeyBuf = privateKey.bn.toBuffer({ size: 32 });
+			handleSig(ecdsaSig.sign(text_to_sign, privKeyBuf));
+		}
+
+		var signer = {
+			readSigningPaths: function (conn, address, handleLengthsBySigningPaths) {
+				handleLengthsBySigningPaths({ r: constants.SIG_LENGTH });
+			},
+			readDefinition: function (conn, address, handleDefinition) {
+				if (!walletObj.definition) {
+					throw Error("definition not found");
+				}
+				handleDefinition(null, walletObj.definition);
+			},
+			sign: function (objUnsignedUnit, assocPrivatePayloads, address, signing_path, handleSignature) {
+				var buf_to_sign = objectHash.getUnitHashToSign(objUnsignedUnit);
+				signWithLocalPrivateKey(0, walletObj.is_change, walletObj.address_index, buf_to_sign, function (sig) {
+					handleSignature(null, sig);
+				});
+			}
+		};
+
+		divisibleAsset.composeAndSaveDivisibleAssetPaymentJoint({
+			asset: asset,
+			paying_addresses: [walletObj.address],
+			fee_paying_addresses: [walletObj.address],
+			change_address: walletObj.address,
+			to_address: toAddress,
+			amount: amount,
+			signer: signer,
+			callbacks: {
+				ifNotEnoughFunds: function (err) {
+					cb(err);
+				},
+				ifError: function (err) {
+					cb("433: " + err);
+				},
+				ifOk: function (objJoint, arrChains) {
+					network.broadcastJoint(objJoint);
+					cb(null, objJoint);
+				}
+			}
+		});
+	});
+
+	headlessWallet.readSingleWallet(function (_wallet_id) {
 		wallet_id = _wallet_id;
 		// listen creates an HTTP server on localhost only 
 		var httpServer = server.listen(conf.rpcPort, conf.rpcInterface);
-		httpServer.timeout = 900*1000;
+		httpServer.timeout = 900 * 1000;
 	});
 }
 
