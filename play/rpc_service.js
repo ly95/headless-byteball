@@ -101,29 +101,28 @@ function initRPC() {
 	server.expose('getbalance', function (args, opt, cb) {
 		let start_time = Date.now();
 		var address = args[0];
-		var asset = args[1];
 		if (address) {
-			if (validationUtils.isValidAddress(address))
+			if (validationUtils.isValidAddress(address)) {
 				db.query(
-					"SELECT asset, is_stable, SUM(amount) AS balance \n\
-					FROM outputs JOIN units USING(unit) \n\
-					WHERE is_spent=0 AND address=? AND sequence='good' "+ (asset ? "AND asset=" + db.escape(asset) : "") + " \n\
-					GROUP BY is_stable", [address],
+				"SELECT asset, is_stable, SUM(amount) AS balance \n\
+					FROM outputs CROSS JOIN units USING(unit) \n\
+					WHERE is_spent=0 AND address=? AND sequence='good' \n\
+					GROUP BY asset, is_stable", [address],
 					function (rows) {
-						var balance = {};
-						for (var i = 0; i < rows.length; i++) {
+						var assocBalances = {base: {stable: 0, pending: 0}};
+						for (var i=0; i<rows.length; i++){
 							var row = rows[i];
-							balance[row.asset || 'base'] = {
-								stable: 0,
-								pending: 0
-							};
-							balance[row.asset || 'base'][row.is_stable ? 'stable' : 'pending'] = row.balance;
+							var asset = row.asset || "base";
+							if (!assocBalances[asset])
+								assocBalances[asset] = {stable: 0, pending: 0};
+							assocBalances[asset][row.is_stable ? 'stable' : 'pending'] = row.balance;
 						}
-						cb(null, balance);
+						cb(null, assocBalances);
 					}
 				);
-			else
+			} else {
 				cb("invalid address");
+			}
 		}
 		else
 			Wallet.readBalance(wallet_id, function (balances) {
