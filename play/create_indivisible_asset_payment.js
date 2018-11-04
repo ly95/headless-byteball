@@ -13,12 +13,12 @@ function createIndivisibleAssetPayment(){
 	var walletGeneral = require('byteballcore/wallet_general.js');
 	
 	indivisibleAsset.composeAndSaveIndivisibleAssetPaymentJoint({
-		asset: 'JY4RvlUGv0qWItikizmNOIjIYZeEciODOog8AzLju50=', 
-		paying_addresses: ["3VH6WZ4V5AD2U55MQLRQPHRRCYQCFDUI"],
-		fee_paying_addresses: ["3VH6WZ4V5AD2U55MQLRQPHRRCYQCFDUI"],
-		change_address: "3VH6WZ4V5AD2U55MQLRQPHRRCYQCFDUI",
+		asset: 'arePGuKJRNEa3vJ2S1CsKHIRrOaYzN+VXsZZ822kmug=', 
+		paying_addresses: ["46YNPZ6SXAEUMOSBA5JYH5KE7TL3DSEW"],
+		fee_paying_addresses: ["46YNPZ6SXAEUMOSBA5JYH5KE7TL3DSEW"],
+		change_address: "46YNPZ6SXAEUMOSBA5JYH5KE7TL3DSEW",
 		to_address: "ORKPD5QZFX4JDGYBQ7FV535LCRDOJQHK",
-		amount: 2111100000000000, 
+		amount: 100, 
 		tolerance_plus: 0, 
 		tolerance_minus: 0, 
 		signer: headlessWallet.signer, 
@@ -29,10 +29,10 @@ function createIndivisibleAssetPayment(){
 				network.broadcastJoint(objJoint);
 				if (arrRecipientChains){ // if the asset is private
 					// send directly to the receiver
-					//network.sendPrivatePayment('wss://example.org/bb', arrRecipientChains);
+					network.sendPrivatePayment('ws://127.0.0.1:6611', arrRecipientChains);
 					
 					// or send to the receiver's device address through the receiver's hub
-					walletGeneral.sendPrivatePayments("0DTZZY6J27KSEVEXL4BIGTZXAELJ47OYW", arrRecipientChains);
+					// walletGeneral.sendPrivatePayments("0DTZZY6J27KSEVEXL4BIGTZXAELJ47OYW", arrRecipientChains);
 				}
 			}
 		}

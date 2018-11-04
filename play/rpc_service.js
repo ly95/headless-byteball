@@ -20,6 +20,7 @@ let Mnemonic = require('bitcore-mnemonic');
 let Bitcore = require('bitcore-lib');
 let objectHash = require('byteballcore/object_hash');
 let ecdsa = require('secp256k1');
+var ecdsaSig = require('byteballcore/signature.js');
 var wallet_id;
 
 if (conf.bSingleAddress)
@@ -227,7 +228,6 @@ function initRPC() {
 			cb("227: invalid address");
 		}
 
-		var ecdsaSig = require('byteballcore/signature.js');
 		let composer = require('byteballcore/composer.js');
 		let network = require('byteballcore/network.js');
 		let callbacks = composer.getSavingCallbacks({
@@ -321,6 +321,61 @@ function initRPC() {
 		obj['definition'] = arrDefinition;
 
 		cb(null, obj);
+	});
+
+	/**
+	 * create an asset
+	 */
+	server.expose('createasset', function(args, opt, cb) {
+		console.log('createasset '+JSON.stringify(args));
+
+		var composer = require('byteballcore/composer.js');
+		var network = require('byteballcore/network.js');
+		var callbacks = composer.getSavingCallbacks({
+			ifNotEnoughFunds: function(err){
+				cb(err);
+			},
+			ifError: function(err){
+				cb("340: " + err);
+			},
+			ifOk: function(objJoint){
+				network.broadcastJoint(objJoint);
+				cb(null, objJoint);
+			}
+		});
+
+		var asset = args[1];
+		var walletObj = args[0];
+
+		var mnemonic = new Mnemonic(walletObj.mnemonic_phrase);
+		var xPrivKey = mnemonic.toHDPrivateKey(walletObj.passphrase);
+
+		var signWithLocalPrivateKey = function(account, is_change, address_index, text_to_sign, handleSig){
+			var path = "m/44'/0'/" + account + "'/"+is_change+"/"+address_index;
+			var privateKey = xPrivKey.derive(path).privateKey;
+			var privKeyBuf = privateKey.bn.toBuffer({size:32});
+			handleSig(ecdsaSig.sign(text_to_sign, privKeyBuf));
+		}
+
+		var signer = {
+			readSigningPaths: function(conn, address, handleLengthsBySigningPaths){
+				handleLengthsBySigningPaths({r: constants.SIG_LENGTH});
+			},
+			readDefinition: function(conn, address, handleDefinition){
+				if (!walletObj.definition) {
+					throw Error("definition not found");
+				}
+				handleDefinition(null, walletObj.definition);
+			},
+			sign: function(objUnsignedUnit, assocPrivatePayloads, address, signing_path, handleSignature){
+				var buf_to_sign = objectHash.getUnitHashToSign(objUnsignedUnit);
+				signWithLocalPrivateKey(0, walletObj.is_change, walletObj.address_index, buf_to_sign, function(sig){
+					handleSignature(null, sig);
+				});
+			}
+		};
+
+		composer.composeAssetDefinitionJoint(walletObj.address, asset, signer, callbacks);
 	});
 
 	headlessWallet.readSingleWallet(function(_wallet_id) {

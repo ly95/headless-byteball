@@ -13,10 +13,10 @@ function createDivisibleAssetPayment(){
 	var walletGeneral = require('byteballcore/wallet_general.js');
 	
 	divisibleAsset.composeAndSaveDivisibleAssetPaymentJoint({
-		asset: 'gRUW3CkKYA9LNf2/gX4bnDdnDZyPY9TAd9wIATzXSwE=', 
-		paying_addresses: ["PYQJWUWRMUUUSUHKNJWFHSR5OADZMUYR"],
-		fee_paying_addresses: ["PYQJWUWRMUUUSUHKNJWFHSR5OADZMUYR"],
-		change_address: "PYQJWUWRMUUUSUHKNJWFHSR5OADZMUYR",
+		asset: 'arePGuKJRNEa3vJ2S1CsKHIRrOaYzN+VXsZZ822kmug=', 
+		paying_addresses: ["46YNPZ6SXAEUMOSBA5JYH5KE7TL3DSEW"],
+		fee_paying_addresses: ["46YNPZ6SXAEUMOSBA5JYH5KE7TL3DSEW"],
+		change_address: "46YNPZ6SXAEUMOSBA5JYH5KE7TL3DSEW",
 		to_address: "GIBIFBPG42MJHN4KGY7RV4UTHTHKVRJE",
 		amount: 5000, 
 		signer: headlessWallet.signer, 
@@ -27,7 +27,7 @@ function createDivisibleAssetPayment(){
 				network.broadcastJoint(objJoint);
 				if (arrChains){ // if the asset is private
 					// send directly to the receiver
-					network.sendPrivatePayment('wss://example.org/bb', arrChains);
+					network.sendPrivatePayment('ws://127.0.0.1:6611', arrChains);
 					
 					// or send to the receiver's device address through the receiver's hub
 					//walletGeneral.sendPrivatePayments("0F7Z7DDVBDPTYJOY7S4P24CW6K23F6B7S", arrChains);
