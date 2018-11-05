@@ -274,7 +274,9 @@ function initRPC() {
 			{ address: walletObj.address, amount: 0 },
 			{ address: toAddress, amount: amount }
 		];
-		composer.composePaymentJoint([walletObj.address], arrOutputs, signer, callbacks);
+		// composePaymentJoint
+		// allow spend unconfirmed asset
+		composer.composeSpendUnconfirmedPaymentJoint([walletObj.address], arrOutputs, signer, callbacks);
 	});
 
 	/**
