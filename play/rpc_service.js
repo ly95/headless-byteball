@@ -385,6 +385,14 @@ function initRPC() {
 		var toAddress = args[2];
 		var amount = args[3];
 
+		if (!validationUtils.isValidBase64(asset, constants.HASH_LENGTH)) {
+			return cb("bad asset: " + asset);
+		}
+
+		if (!validationUtils.isValidAddress(toAddress)) {
+			cb("invalid address");
+		}
+
 		var network = require('byteballcore/network.js');
 		var divisibleAsset = require('byteballcore/divisible_asset.js');
 
@@ -429,7 +437,7 @@ function initRPC() {
 					cb(err);
 				},
 				ifError: function (err) {
-					cb("433: " + err);
+					cb("440: " + err);
 				},
 				ifOk: function (objJoint, arrChains) {
 					network.broadcastJoint(objJoint);
