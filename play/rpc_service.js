@@ -395,6 +395,10 @@ function initRPC() {
 			cb("invalid address");
 		}
 
+		if (!amount) {
+			cb("invalid amount");
+		}
+
 		var network = require('byteballcore/network.js');
 		var divisibleAsset = require('byteballcore/divisible_asset.js');
 
@@ -427,6 +431,7 @@ function initRPC() {
 		};
 
 		divisibleAsset.composeAndSaveDivisibleAssetPaymentJoint({
+			spend_unconfirmed: "all",
 			asset: asset,
 			paying_addresses: [walletObj.address],
 			fee_paying_addresses: [walletObj.address],
